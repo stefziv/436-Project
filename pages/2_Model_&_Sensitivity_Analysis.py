@@ -1,48 +1,68 @@
-import streamlit as st
+\import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
-from sklearn.linear_model import LinearRegression
 
 if st.session_state.lm:
     model = st.session_state.lm
-    coefficients = model.coef_ 
     df = st.session_state.df
-    X, y = st.session_state.lm_params
-    y_pred = model.predict(X)
-    sensitivity_results = []
+    X,y = st.session_state.lm_params
+    coeffs = model.coef_ 
+    coeff_df = pd.DataFrame(
+        data=coeffs,
+        columns=["coefficients"],
+        index=df.columns
+    )
+    baseline_predictions = model.predict(X)
+    sensitivity_df = pd.DataFrame(columns=['Feature', 'Baseline', 'Perturbed', 'Difference'])
+    sensitivity_l = []
+    for feature in X.columns:
+        perturbed_X = X.copy()
+        perturbed_X[feature] = np.random.normal(perturbed_X[feature].mean()*3,
+                                                perturbed_X[feature].std()*3, 
+                                                len(perturbed_X))
 
-    for coeff_index in range(coefficients.shape[0]):
-        vary_coeff_values = np.linspace(np.min(coefficients[coeff_index]), np.max(coefficients[coeff_index]), 100)
-
-        coefficients_sensitivity = coefficients.copy()
-
-        for _, coeff_value in enumerate(vary_coeff_values):
-            coefficients_sensitivity[coeff_index] = coeff_value
-            model_sensitivity = LinearRegression()
-            model_sensitivity.fit(X,y)
-            model_sensitivity.coef_ = coefficients_sensitivity
-            y_pred_sensitivity = model_sensitivity.predict(X)
-            sensitivity_diff = y_pred_sensitivity - y_pred
-            sensitivity_results.append(sensitivity_diff)
-
-    sensitivity_results = np.array(sensitivity_results)
-
+        perturbed_predictions = model.predict(perturbed_X)
+        difference = perturbed_predictions - baseline_predictions
+        sensitivity_l.append({
+            'Feature': feature,
+            'Baseline': np.mean(baseline_predictions),
+            'Perturbed': np.mean(perturbed_predictions),
+            'Difference': np.mean(difference)
+        })
+    
+    sensitivity_df = pd.concat([sensitivity_df, pd.DataFrame(sensitivity_l)], ignore_index=True)
+    st.dataframe(sensitivity_df)
     fig = go.Figure()
 
-    for i in range(sensitivity_results.shape[1]):
-        fig.add_trace(go.Scatter(
-            x=np.tile(vary_coeff_values, coefficients.shape[0]),
-            y=sensitivity_results[:, i],
-            mode='lines',
-            name=f'Coefficient {i + 1} sensitivity'
-        ))
+    fig.add_trace(go.Bar(
+        name='Positive',
+        x=sensitivity_df['Perturbed'],
+        y=sensitivity_df['Feature'],
+        marker_color='green',
+        orientation='h'
+    ))
 
     fig.update_layout(
-        xaxis_title='Varying Coefficient Value',
-        yaxis_title='Sensitivity',
-        title='Sensitivity Analysis of Coefficients'
+        title='Sensitivity Analysis',
+        xaxis_title='Predicted Output',
+        yaxis_title='Feature',
+        barmode='relative',
+        bargap=0.2,
+        bargroupgap=0.1,
+        showlegend=False
     )
-
-    fig.show()
+    st.plotly_chart(fig)
+    df_corr = X.copy()
+    df_corr["SalePrice"] = y
+    _ = df_corr.columns.tolist()
+    cols = _[-1:] + _[:-1]
+    df_corr=df_corr[cols]
+    st.plotly_chart(px.imshow(df_corr.corr(),
+                            width = 700,
+                            height = 700,
+                            color_continuous_scale='Viridis'
+                            )
+                    )
+    
