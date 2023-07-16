@@ -35,11 +35,13 @@ def encode_object_columns(dataframe):
     for column in temp.columns:
         if temp[column].dtype == 'object':
             temp[column] = temp.apply(lambda x: encoder(x[column]), axis=1)
+            
 
         if np.issubdtype(temp[column].dtype, np.floating) or np.issubdtype(temp[column].dtype, np.integer):
             if temp[column].isnull().any():
                 temp[column].fillna(value=0, inplace=True)  # Encode NaN values as 0
-
+        
+    temp = temp.apply(lambda x: (x - x.min())/(x.max() - x.min()))
     return temp
 
 def make_predictions():
@@ -67,6 +69,7 @@ def train_model():
     raw_data_train = raw_data_train.rename(columns=column_mapping)
     X = encode_object_columns(raw_data_train[final_features])
     y = raw_data_train.values[:, -1]
+    st.session_state.lm_params = X,y
     lm = LinearRegression()
     lm.fit(X,y)
     return lm
