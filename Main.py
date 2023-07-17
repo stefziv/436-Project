@@ -40,10 +40,11 @@ def encode_object_columns(dataframe):
             temp[column] = temp.apply(lambda x: encoder(x[column]), axis=1)
             
 
+
         if np.issubdtype(temp[column].dtype, np.floating) or np.issubdtype(temp[column].dtype, np.integer):
             if temp[column].isnull().any():
                 temp[column].fillna(value=0, inplace=True)  # Encode NaN values as 0
-        
+
     temp = temp.apply(lambda x: (x - x.min())/(x.max() - x.min()))
     return temp
 
@@ -189,7 +190,7 @@ def main():
             st.experimental_rerun()
 
     st.divider()
-    
+
     st.header("Current Listings")
 
     if len(st.session_state.df) > 0:
