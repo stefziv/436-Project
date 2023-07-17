@@ -34,6 +34,8 @@ if st.session_state.lm:
     
     sensitivity_df = pd.concat([sensitivity_df, pd.DataFrame(sensitivity_l)], ignore_index=True)
     st.dataframe(sensitivity_df)
+    st.text('The magnitude of each bar below indicates the imapact that specific feature')
+    st.text('will have on the house price. ie a larger bar indicates a large impact price')
     fig = go.Figure()
 
     fig.add_trace(go.Bar(
