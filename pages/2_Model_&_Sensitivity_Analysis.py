@@ -1,4 +1,4 @@
-\import streamlit as st
+import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
@@ -19,8 +19,8 @@ if st.session_state.lm:
     sensitivity_l = []
     for feature in X.columns:
         perturbed_X = X.copy()
-        perturbed_X[feature] = np.random.normal(perturbed_X[feature].mean()*3,
-                                                perturbed_X[feature].std()*3, 
+        perturbed_X[feature] = np.random.normal(perturbed_X[feature].mean()*2,
+                                                perturbed_X[feature].std()*2, 
                                                 len(perturbed_X))
 
         perturbed_predictions = model.predict(perturbed_X)
@@ -38,21 +38,22 @@ if st.session_state.lm:
 
     fig.add_trace(go.Bar(
         name='Positive',
-        x=sensitivity_df['Perturbed'],
+        x=sensitivity_df['Difference'],
         y=sensitivity_df['Feature'],
-        marker_color='green',
-        orientation='h'
+        orientation='h',
+        marker_color='azure'
     ))
 
     fig.update_layout(
         title='Sensitivity Analysis',
-        xaxis_title='Predicted Output',
+        xaxis_title='Change in Predicted Output',
         yaxis_title='Feature',
         barmode='relative',
         bargap=0.2,
         bargroupgap=0.1,
-        showlegend=False
+        showlegend=False,
     )
+
     st.plotly_chart(fig)
     df_corr = X.copy()
     df_corr["SalePrice"] = y
